@@ -62,7 +62,122 @@ study <- stemcells$study
 
 # **#mixOmics vignette**
 
-```{r}
+Note the data pre-processing requirements before analysing data with `mixOmics`:
 
+-   **Types of data**. Different types of biological data can be explored and integrated with `mixOmics`. Our methods can handle molecular features measured on a continuous scale (e.g. microarray, mass spectrometry-based proteomics and metabolomics) or sequenced-based count data (RNA-seq, 16S, shotgun metagenomics) that become \`continuous’ data after pre-processing and normalisation.
+
+-   **Normalisation**. The package does not handle normalisation as it is platform-specific and we cover a too wide variety of data! Prior to the analysis, we assume the data sets have been normalised using appropriate normalisation methods and pre-processed when applicable.
+
+-   **Prefiltering**. While `mixOmics` methods can handle large data sets (several tens of thousands of predictors), we recommend pre-filtering the data to less than 10K predictor variables per data set, for example by using Median Absolute Deviation (Teng et al. [2016](https://bioconductor.org/packages/release/bioc/vignettes/mixOmics/inst/doc/vignette.html#ref-Ten16)) for RNA-seq data, by removing consistently low counts in microbiome data sets (Lê Cao et al. [2016](https://bioconductor.org/packages/release/bioc/vignettes/mixOmics/inst/doc/vignette.html#ref-Lec16)) or by removing near-zero variance predictors. Such step aims to lessen the computational time during the parameter tuning process.
+
+-   **Data format**. Our methods use matrix decomposition techniques. Therefore, the numeric data matrix or data frames have 𝑛n observations or samples in rows and 𝑝p predictors or variables (e.g. genes, proteins, OTUs) in columns.
+
+-   **Covariates**. In the current version of `mixOmics`, covariates that may confound the analysis are not included in the methods. We recommend correcting for those covariates beforehand using appropriate univariate or multivariate methods for batch effect removal. Contact us for more details as we are currently working on this aspect.
+
+```{r}
+#Upload data
+#The examples we give in this vignette use data that are already part of the package. To upload your own data, check first that your working directory is set, then read your data from a .txt or .csv format, either by using File > Import Dataset in RStudio or via one of these command lines:
+# from csv file
+data <- read.csv("your_data.csv", row.names = 1, header = TRUE)
+
+# from txt file
+data <- read.table("your_data.txt", header = TRUE)
+
+#For more details about the arguments used to modify those functions, type ?read.csv or ?read.table in the R console.
+
+```
+
+```{r}
+#Quick start in mixOmics {#02:quick-start}
+#Each analysis should follow this workflow:
+
+#Run the method
+#Graphical representation of the samples
+#Graphical representation of the variables
+#Then use your critical thinking and additional functions and visual tools to make sense of your data! (some of which are listed in 1.2.2) and will be described in the next Chapters.
+
+#For instance, for Principal Components Analysis, we first load the data:
+data(nutrimouse)
+X <- nutrimouse$gene
+```
+
+#Then use the following steps:
+
+```{r}
+MyResult.pca <- pca(X)  # 1 Run the method
+plotIndiv(MyResult.pca) # 2 Plot the samples
+```
+
+```{r}
+plotVar(MyResult.pca)   # 3 Plot the variables
+```
+
+```{r}
+#This is only a first quick-start, there will be many avenues you can take to deepen your exploratory and integrative analyses. The package proposes several methods to perform variable, or feature selection to identify the relevant information from rather large omics data sets. The sparse methods are listed in the Table in 1.2.2.
+
+#Following our example here, sparse PCA can be applied to select the top 5 variables contributing to each of the two components in PCA. The user specifies the number of variables to selected on each component, for example, here 5 variables are selected on each of the first two components (keepX=c(5,5)):
+MyResult.spca <- spca(X, keepX=c(5,5)) # 1 Run the method
+plotIndiv(MyResult.spca)               # 2 Plot the samples
+```
+
+\#
+
+```{r}
+plotVar(MyResult.spca)                 # 3 Plot the variables
+
+#You can see know that we have considerably reduced the number of genes in the plotVar correlation circle plot.
+
+#Do not stop here! We are not done yet. You can enhance your analyses with the following:
+
+#Have a look at our manual and each of the functions and their examples, e.g. ?pca, ?plotIndiv, ?sPCA, …
+
+#Run the examples from the help file using the example function: example(pca), example(plotIndiv), …
+
+#Have a look at our website that features many tutorials and case studies,
+
+#Keep reading this vignette, this is just the beginning!
+```
+
+```{r}
+#PCA on the multidrug study {#03}
+#o illustrate PCA and is variants, we will analyse the multidrug case study available in the package. This pharmacogenomic study investigates the patterns of drug activity in cancer cell lines (Szakács et al. 2004). These cell lines come from the NCI-60 Human Tumor Cell Lines established by the Developmental Therapeutics Program of the National Cancer Institute (NCI) to screen for the toxicity of chemical compound repositories in diverse cancer cell lines. NCI-60 includes cell lines derived from cancers of colorectal (7 cell lines), renal (8), ovarian (6), breast (8), prostate (2), lung (9) and central nervous system origin (6), as well as leukemia (6) and melanoma (8).
+
+#Two separate data sets (representing two types of measurements) on the same NCI-60 cancer cell lines are available in multidrug (see also ?multidrug):
+
+#$ABC.trans: Contains the expression of 48 human ABC transporters measured by quantitative real-time PCR (RT-PCR) for each cell line.
+
+#$compound: Contains the activity of 1,429 drugs expressed as GI50, which is the drug concentration that induces 50% inhibition of cellular growth for the tested cell line.
+
+#Additional information will also be used in the outputs:
+
+#$comp.name: The names of the 1,429 compounds.
+
+#$cell.line: Information on the cell line names ($Sample) and the cell line types ($Class).
+
+#In this activity, we illustrate PCA performed on the human ABC transporters ABC.trans, and sparse PCA on the compound data compound.
+
+#3.1Load the data {#03:load-data}
+#The input data matrix 𝑿
+# is of size 𝑁
+ #samples in rows and 𝑃
+# variables (e.g. genes) in columns. We start with the ABC.trans data.
+library(mixOmics)
+data(multidrug)
+X <- multidrug$ABC.trans
+dim(X) # Check dimensions of data
+```
+
+```{r}
+#Example: PCA {#03:pca}
+#3.2.1Choose the number of components {#03:pca-ncomp}
+#Contrary to the minimal code example, here we choose to also scale the variables for the reasons detailed earlier. The function tune.pca() calculates the cumulative proportion of explained variance for a large number of principal components (here we set ncomp = 10). A screeplot of the proportion of explained variance relative to the total amount of variance in the data for each principal component is output (Fig. 4):
+
+tune.pca.multi <- tune.pca(X, ncomp = 10, scale = TRUE)
+plot(tune.pca.multi)
+```
+
+Figure 4: **Screeplot from the PCA performed on the `ABC.trans` data**: Amount of explained variance for each principal component on the ABC transporter data.
+
+```{r}
 
 ```
