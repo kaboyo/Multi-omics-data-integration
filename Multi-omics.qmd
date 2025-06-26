@@ -24,3 +24,45 @@ You can add options to executable code like this
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+#MINT: a multivariate integrative method to identify reproducible molecular signatures across independent experiments and platforms
+#https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1553-8
+#https://mixomics.org/mixMINT/
+
+
+#MINT
+#The P-integration framework (referred to as MINT – Multivariate INTegration) integrates several datasets measured on the same types of variables. This method enhances statistical power by controlling for batch effects before applying standard multivariate analysis techniques like (s)PLS or (s)PLS-DA. MINT is useful for integrating homogeneous `omics data across different studies, enabling data sharing and re-use. It has supervised (e.g. PLS-DA) and unsupervised (e.g. PLS) variants, allowing for both classification of novel samples and identification of correlated features between datasets. Additionally, it has sparse approaches to select the most relevant features.
+
+#MINT-type questions:
+#– Can I combine the datasets whilst accounting for the variation between studies?
+#– Can I discriminate the samples based on their outcome category?
+#– Which variables are discriminative across all studies?
+#– Can they constitute a signature that predicts the class of unseen samples?
+  
+
+```
+
+```{r}
+
+#Quick Start
+#install mixomics
+#if (!require("BiocManager", quietly = TRUE))
+ #   install.packages("BiocManager")
+#
+#BiocManager::install("mixOmics")
+
+library(mixOmics)
+data(stemcells)
+
+X <- stemcells$gene
+Y <- stemcells$celltype
+study <- stemcells$study
+```
+
+# **#mixOmics vignette**
+
+```{r}
+
+
+```
